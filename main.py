@@ -1,6 +1,8 @@
 import discord
 import random
 import os
+import requests
+from discord import app_commands
 from discord.ext import commands
 
 bot = commands.Bot(command_prefix="!",
@@ -9,7 +11,6 @@ bot = commands.Bot(command_prefix="!",
                    status=discord.Status.idle,
                    activity=discord.Activity(
                        type=discord.ActivityType.watching, name="Tonikawa"))
-
 pics = [
     "https://imgur.com/8G85g1m", "https://imgur.com/VmlgHPj",
     "https://imgur.com/Ga713j1", "https://imgur.com/5Q5DqSv",
@@ -29,7 +30,7 @@ quotes = [
     '"Opportunities multiply as they are seized."',
     '"To know your Enemy, you must become your Enemy."',
     '"know yourself and you will win all battles."',
-    '"All warfare is based on deception."',
+    '"All warfare is based."',
     '"The quality of decision is like the well-timed swoop of a falcon which enables it to strike and destroy its victim."',
     '"Let your rapidity be that of the wind, your compactness that of the forest."',
     '"Let your plans be dark and impenetrable as night, and when you move, fall like a thunderbolt."'
@@ -39,25 +40,29 @@ quotes = [
 @bot.event
 async def on_ready():
     print("We have logged in as {0.user}".format(bot))
-
-
+    try:
+      synced=await bot.tree.sync()
+      print(f"synced {len(synced)} command(s)")
+    except Exception as e:
+      print(e)
+      
 @bot.command()
 async def troll(ctx, member: discord.Member):
-    if ctx.author.id==916700691718864986:
-       with open("DATA", "r+") as f:
-              f.truncate(0)
-       with open("DATA", "a") as f:
-              f.write(str(member.id))
-       await ctx.channel.send(
-                "https://tenor.com/view/ouro-kronii-we-do-a-little-trolling-hololive-gif-22976204")
+    if ctx.author.id == 916700691718864986:
+        with open("DATA", "r+") as f:
+            f.truncate(0)
+        with open("DATA", "a") as f:
+            f.write(str(member.id))
+        await ctx.channel.send(
+            "https://tenor.com/view/ouro-kronii-we-do-a-little-trolling-hololive-gif-22976204"
+        )
     else:
-       None
-  
-      
-       
+        None
+
+
 @bot.event
 async def on_member_join(member):
-    channel = member.guild.system_channel
+    channel = member.guild.system_channelz
     await channel.send(
         f"Welcome to the server {member.mention}! We hope you enjoy your stay.\n https://tenor.com/bQUMM.gif"
     )
@@ -75,8 +80,39 @@ async def help(ctx):
     embed.add_field(name="Summon", value="!summon", inline=True)
     embed.add_field(name="Quotes", value="!quote", inline=True)
     await ctx.send(embed=embed)
+  
+@bot.tree.command(name="weather")
+@app_commands.describe(location="location?")
+async def weather(interaction: discord.Interaction,location:str):
+ 
+#weather shit
+  params={
+      "access_key":"fb8c0c44be2cc73f99e4834a6455d125",
+      "query":"Australia"
+  }
+  params["query"]=location
+  response=requests.get("http://api.weatherstack.com/current",params=params)
+  data=response.json()
+  weather_descrp=data["current"]["weather_descriptions"][0]
+  temp=str(data["current"]["temperature"])+" C"
+  preci=str(data["current"]["precip"])+" MM"
+  humidity=str(data["current"]["humidity"])
+  pressure=str(data["current"]["pressure"])+" MB"
+  time=str(data["location"]["localtime"]).split()
+  time=time[1]
+  icon=data["current"]["weather_icons"][0]
 
+  embed = discord.Embed(title=location, colour=discord.Colour.blue())
 
+  embed.set_image(url=icon)
+  embed.add_field(name="Weather description", value=weather_descrp, inline=True)
+  embed.add_field(name="Precipitation", value=preci, inline=True)
+  embed.add_field(name="Humidity", value=humidity, inline=True)
+  embed.add_field(name="Temperature", value=temp, inline=True)
+  embed.add_field(name="Pressure", value=pressure, inline=True)
+  embed.add_field(name="Local Time", value=time, inline=True)
+  await interaction.response.send_message(embed=embed)
+  
 @bot.event
 async def on_message(message):
     # if message.author == client.user:
@@ -143,15 +179,14 @@ async def quote(ctx):
     await ctx.channel.send(
         f"{random.choice(quotes)} – Sun Tzu, The Art of War.")
 
-
 @bot.command()
 async def stop(ctx):
-    if ctx.author.id==916700691718864986:
-      with open("DATA", "r+") as f:
-          f.truncate(0)
-      await ctx.channel.send("https://tenor.com/view/troll-gif-22102624")
-      with open("DATA", "a") as f:
-          f.write("1")
+    if ctx.author.id == 916700691718864986:
+        with open("DATA", "r+") as f:
+            f.truncate(0)
+        await ctx.channel.send("https://tenor.com/view/troll-gif-22102624")
+        with open("DATA", "a") as f:
+            f.write("1")
 
 
 TOKEN = os.environ['TOKEN']
